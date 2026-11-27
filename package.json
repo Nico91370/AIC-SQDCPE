@@ -1,0 +1,40 @@
+{
+  "name": "sqdcpe-aic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Application web d'Animation à Intervalle Court (AIC) SQDCPE",
+  "scripts": {
+    "dev": "concurrently -n api,web \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "tsx watch server/index.ts",
+    "dev:web": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "start": "NODE_ENV=production tsx server/index.ts",
+    "migrate": "tsx server/migrate.ts",
+    "import:excel": "tsx scripts/import-excel.ts",
+    "test": "tsx --test server/**/*.test.ts"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "^5.30.0",
+    "@fastify/static": "^11.0.0",
+    "exceljs": "^4.4.0",
+    "fastify": "^5.12.8",
+    "jose": "^6.2.18",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.7",
+    "recharts": "^3.11.1",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^8.4.0"
+  }
+}

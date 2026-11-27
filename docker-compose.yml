@@ -1,0 +1,30 @@
+# Lancement complet (application + base) sur un serveur interne :
+#   docker compose up -d --build
+#   docker compose exec app npm run import:excel -- /data/AIC_SQDCPE.xlsm --site "Mon site"
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sqdcpe
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sqdcpe}
+      POSTGRES_DB: sqdcpe
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+  app:
+    build: .
+    depends_on: [db]
+    environment:
+      DATABASE_URL: postgres://sqdcpe:${POSTGRES_PASSWORD:-sqdcpe}@db:5432/sqdcpe
+      AUTH_MODE: ${AUTH_MODE:-dev}
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      DEFAULT_ROLE: ${DEFAULT_ROLE:-animateur}
+    volumes:
+      - ./data:/data:ro
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+volumes:
+  pgdata:
