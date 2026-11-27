@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { api } from './api.ts';
-import { currentAuthMode, isSignedIn, signIn, signOut } from './auth.ts';
+import { codeRequired, currentAuthMode, isSignedIn, signIn, signOut } from './auth.ts';
+import ImportExcel from './ImportExcel.tsx';
 import Home from './pages/Home.tsx';
 import Aic from './pages/Aic.tsx';
 import Actions from './pages/Actions.tsx';
@@ -30,8 +31,10 @@ interface Ctx { siteId: number; config: Config; user: User; reload: () => Promis
 const AppCtx = createContext<Ctx>(null as any);
 export const useApp = () => useContext(AppCtx);
 
-function Login() {
+function Login({ rejected }: { rejected?: boolean }) {
   const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const needCode = codeRequired();
   const entra = currentAuthMode() === 'entra';
   return (
     <div className="login">
@@ -41,11 +44,17 @@ function Login() {
         {entra ? (
           <button className="btn primary" onClick={() => signIn()}>Se connecter avec Microsoft 365</button>
         ) : (
-          <form onSubmit={async (e) => { e.preventDefault(); await signIn(name.trim()); window.location.reload(); }}>
+          <form onSubmit={async (e) => { e.preventDefault(); await signIn(needCode ? `${code.trim()}:${name.trim()}` : name.trim()); window.location.reload(); }}>
             <label>Votre nom
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Prénom Nom" autoFocus />
             </label>
-            <button className="btn primary" disabled={!name.trim()}>Entrer</button>
+            {needCode && (
+              <label>Code d'accès
+                <input type="password" value={code} onChange={(e) => setCode(e.target.value)} />
+              </label>
+            )}
+            {rejected && <div className="error">Code d'accès incorrect.</div>}
+            <button className="btn primary" disabled={!name.trim() || (needCode && !code.trim())}>Entrer</button>
             <p className="hint">Mode test : la connexion Microsoft 365 s'active à l'installation sur le serveur.</p>
           </form>
         )}
@@ -63,6 +72,7 @@ export default function App() {
   const [config, setConfig] = useState<Config | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [rejected, setRejected] = useState(false);
 
   useEffect(() => {
     if (!authed) return;
@@ -72,7 +82,12 @@ export default function App() {
         setSites(s);
         if (!s.some((x: any) => x.id === siteId)) setSiteId(s[0]?.id ?? null);
       })
-      .catch((e) => (e.status === 401 ? setAuthed(false) : setError(e.message)));
+      .catch((e) => {
+        if (e.status !== 401) return setError(e.message);
+        try { localStorage.removeItem('aic.devUser'); } catch { /* ignore */ }
+        setRejected(true);
+        setAuthed(false);
+      });
   }, [authed]);
 
   const reload = useCallback(async () => {
@@ -87,10 +102,22 @@ export default function App() {
     reload().catch((e) => setError(e.message));
   }, [siteId, reload]);
 
-  if (!authed) return <Login />;
+  if (!authed) return <Login rejected={rejected} />;
   if (error) return <div className="fatal">{error}</div>;
   if (user && sites.length === 0) {
-    return <div className="fatal">Aucun site n'est encore configuré. Importez votre fichier Excel avec <code>npm run import:excel</code>.</div>;
+    return (
+      <div className="login">
+        <div className="login-card">
+          <div className="brand-big">AIC <span>·</span> SQDCPE</div>
+          {user.role === 'admin' ? (
+            <>
+              <p>Bienvenue {user.name}. Pour commencer, importez votre fichier Excel AIC SQDCPE : indicateurs, équipe, journal des mesures et plan d'actions seront repris.</p>
+              <ImportExcel onDone={() => window.location.reload()} />
+            </>
+          ) : <p>Aucun site n'est encore configuré. Un administrateur doit d'abord importer le fichier Excel.</p>}
+        </div>
+      </div>
+    );
   }
   if (!user || !siteId || !config) return <div className="loading">Chargement…</div>;
 

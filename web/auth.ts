@@ -1,7 +1,7 @@
 import { PublicClientApplication, type AccountInfo } from '@azure/msal-browser';
 
 // Connexion : Microsoft 365 (Entra ID) en production, nom saisi en mode test.
-export type AuthConfig = { mode: 'dev' } | { mode: 'entra'; tenantId: string; clientId: string };
+export type AuthConfig = { mode: 'dev'; codeRequired?: boolean } | { mode: 'entra'; tenantId: string; clientId: string };
 
 let config: AuthConfig = { mode: 'dev' };
 let msal: PublicClientApplication | null = null;
@@ -65,3 +65,4 @@ export async function authHeader(): Promise<string> {
 }
 
 export const currentAuthMode = () => config.mode;
+export const codeRequired = () => config.mode === 'dev' && !!config.codeRequired;

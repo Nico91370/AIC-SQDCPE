@@ -19,6 +19,8 @@ const tenant = process.env.ENTRA_TENANT_ID ?? '';
 const clientId = process.env.ENTRA_CLIENT_ID ?? '';
 const adminEmails = (process.env.ADMIN_EMAILS ?? '').toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
 const defaultRole = (process.env.DEFAULT_ROLE ?? 'animateur') as Role;
+// Mode test : code d'accès partagé, demandé à l'entrée (recommandé dès que le site est en ligne).
+const accessCode = (process.env.ACCESS_CODE ?? '').trim();
 
 if (authMode === 'entra' && (!tenant || !clientId)) {
   throw new Error('AUTH_MODE=entra exige ENTRA_TENANT_ID et ENTRA_CLIENT_ID');
@@ -31,7 +33,7 @@ const jwks = authMode === 'entra'
 export function publicAuthConfig() {
   return authMode === 'entra'
     ? { mode: 'entra', tenantId: tenant, clientId }
-    : { mode: 'dev' };
+    : { mode: 'dev', codeRequired: accessCode.length > 0 };
 }
 
 async function identify(req: FastifyRequest): Promise<{ email: string; name: string } | null> {
@@ -47,7 +49,12 @@ async function identify(req: FastifyRequest): Promise<{ email: string; name: str
     return { email, name: String(payload.name ?? email) };
   }
   if (!h.startsWith('Dev ')) return null;
-  const name = decodeURIComponent(h.slice(4)).trim();
+  let name = decodeURIComponent(h.slice(4)).trim();
+  if (accessCode) {
+    const sep = name.indexOf(':');
+    if (sep < 0 || name.slice(0, sep) !== accessCode) return null;
+    name = name.slice(sep + 1).trim();
+  }
   if (!name) return null;
   return { email: name.toLowerCase().replace(/\s+/g, '.') + '@local', name };
 }

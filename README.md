@@ -39,9 +39,19 @@ npm run import:excel -- "chemin/AIC SQDCPE V1.1.xlsm" --site "Site pilote"
 npm run dev                     # interface sur http://localhost:5173
 ```
 
-En mode test (`AUTH_MODE=dev`), on entre simplement son nom. Le premier utilisateur connecté devient administrateur.
+En mode test (`AUTH_MODE=dev`), on entre simplement son nom, et le code d'accès si `ACCESS_CODE` est défini. Le premier utilisateur connecté devient administrateur. L'import Excel est aussi possible depuis l'application (Paramètres → Import Excel).
 
 Réimporter un fichier pour un site existant : ajoutez `--replace` (efface les données de ce site puis réimporte).
+
+## Serveur de test gratuit (Render.com)
+
+1. Créez un compte sur [render.com](https://render.com) avec « Sign in with GitHub ».
+2. **New → Blueprint**, choisissez le dépôt `AIC-SQDCPE`, puis **Apply**. Render lit `render.yaml` et crée l'application et la base.
+3. Render demande une valeur pour `ACCESS_CODE` : c'est le code d'accès que les testeurs devront saisir.
+4. Une fois le déploiement terminé (5 à 10 minutes), ouvrez l'adresse `https://aic-sqdcpe-xxxx.onrender.com`.
+5. Entrez votre nom et le code : le premier connecté devient administrateur et peut importer le fichier Excel depuis l'écran d'accueil.
+
+Limites de l'offre gratuite : mise en veille après 15 minutes sans visite (premier chargement d'environ une minute), base supprimée au bout de 30 jours.
 
 ## Mettre en production
 

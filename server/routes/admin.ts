@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { one, q } from '../db.ts';
 import { clearUserCache, requireRole } from '../auth.ts';
+import { importWorkbook } from '../importer.ts';
 
 // Administration des référentiels (ex-onglets Indicateurs, Équipe, Paramètres).
 export default async function adminRoutes(app: FastifyInstance) {
@@ -74,6 +75,20 @@ export default async function adminRoutes(app: FastifyInstance) {
     const site = await one('INSERT INTO sites(name) VALUES ($1) RETURNING *', [req.body.name]);
     await q(`INSERT INTO levels(site_id, level, instance) VALUES ($1,1,'AIC Équipe'),($1,2,'AIC Global Opération'),($1,3,'AIC Management Site')`, [site.id]);
     return site;
+  });
+
+  // Import du classeur Excel depuis l'application (corps de requête = fichier brut).
+  app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer', bodyLimit: 30 * 1024 * 1024 },
+    (_req, body, done) => done(null, body));
+  app.post<{ Querystring: { site?: string; replace?: string } }>('/api/import', admin, async (req, reply) => {
+    const name = (req.query.site ?? '').trim();
+    if (!name) return reply.code(400).send({ error: 'Donnez un nom au site.' });
+    if (!Buffer.isBuffer(req.body) || (req.body as Buffer).length === 0) return reply.code(400).send({ error: 'Fichier manquant.' });
+    try {
+      return await importWorkbook(req.body as Buffer, name, req.query.replace === '1');
+    } catch (e: any) {
+      return reply.code(400).send({ error: `Import impossible : ${e.message}` });
+    }
   });
 
   app.get('/api/users', admin, async () => q('SELECT email, name, role, last_login FROM users ORDER BY name'));

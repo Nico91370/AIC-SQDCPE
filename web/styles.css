@@ -184,3 +184,4 @@ label.check { flex-direction: row; align-items: center; font-size: .85rem; }
   .validate-bar > span { display: none; }
   .validate-bar .btn { flex: 1; justify-content: center; }
 }
+.import-box { display: flex; flex-direction: column; gap: .8rem; max-width: 480px; }

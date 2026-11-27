@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.ts';
 import { useApp, type Indicator } from '../App.tsx';
+import ImportExcel from '../ImportExcel.tsx';
 
 const LIST_LABELS: Record<string, string> = {
   typologie: 'Typologie du problème', criticite: 'Criticité', responsabilite: 'Responsabilité',
@@ -8,7 +9,7 @@ const LIST_LABELS: Record<string, string> = {
 };
 
 export default function Admin() {
-  const [tab, setTab] = useState<'ind' | 'svc' | 'lists' | 'users'>('ind');
+  const [tab, setTab] = useState<'ind' | 'svc' | 'lists' | 'users' | 'import'>('ind');
   return (
     <div className="page">
       <div className="page-head"><h1>Paramètres</h1></div>
@@ -17,11 +18,18 @@ export default function Admin() {
         <button className={tab === 'svc' ? 'on' : ''} onClick={() => setTab('svc')}>Services et animateurs</button>
         <button className={tab === 'lists' ? 'on' : ''} onClick={() => setTab('lists')}>Listes et jours fériés</button>
         <button className={tab === 'users' ? 'on' : ''} onClick={() => setTab('users')}>Utilisateurs</button>
+        <button className={tab === 'import' ? 'on' : ''} onClick={() => setTab('import')}>Import Excel</button>
       </div>
       {tab === 'ind' && <Indicators />}
       {tab === 'svc' && <Services />}
       {tab === 'lists' && <Lists />}
       {tab === 'users' && <Users />}
+      {tab === 'import' && (
+        <>
+          <p className="muted small">Importer un classeur crée un nouveau site, ou remplace un site existant si la case est cochée (ses mesures et actions sont alors effacées puis reprises du fichier).</p>
+          <ImportExcel onDone={() => setTimeout(() => window.location.reload(), 1500)} />
+        </>
+      )}
     </div>
   );
 }
